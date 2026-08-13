@@ -1,6 +1,0 @@
-__pycache__
-*.pyc
-.pytest_cache
-uploads/products/*
-!uploads/products/.gitkeep
-.venv
