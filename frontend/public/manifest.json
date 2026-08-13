@@ -1,0 +1,10 @@
+{
+  "name": "ORALYAH",
+  "short_name": "ORALYAH",
+  "description": "ORALYAH — boutique en ligne avec paiement à la livraison et géolocalisation.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#B45309",
+  "icons": []
+}

@@ -1,0 +1,26 @@
+# Env
+.env
+
+# Python
+backend/.venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.egg-info/
+backend/.pytest_cache/
+
+# Uploads (keep folder, ignore contents)
+backend/uploads/products/*
+!backend/uploads/products/.gitkeep
+
+# Node
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env.local
+
+# OS
+.DS_Store
+
+# Supabase CLI local state (not meant to be versioned)
+supabase/.branches/
+supabase/.temp/
