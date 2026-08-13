@@ -24,3 +24,6 @@ frontend/.env.local
 # Supabase CLI local state (not meant to be versioned)
 supabase/.branches/
 supabase/.temp/
+
+# Concurrency test dependencies (installed via npm install in supabase/tests/concurrency)
+supabase/tests/concurrency/node_modules/

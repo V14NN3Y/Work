@@ -1,11 +1,20 @@
--- Row Level Security for every table. Supabase's newer default (see supabase/config.toml
--- `[api] schemas`) does NOT auto-expose new tables to the anon/authenticated Data API roles —
--- both an explicit GRANT *and* a passing RLS policy are required for any operation to succeed
--- through PostgREST. Column-scoped grants (orders.status, reviews.status/moderated_at) are used
--- where the admin app should only ever touch that one column, not the whole row.
+-- Row Level Security for every table. NOTE (confirmed against the running local database,
+-- see supabase/tests/database/04_rls.sql): this Postgres instance grants anon/authenticated/
+-- service_role broad table-level privileges by default the moment a table is created —
+-- the explicit `grant select on ...` statements below are therefore NOT the actual access
+-- gate, RLS is. A SELECT on a table with RLS enabled and no matching policy returns zero
+-- rows (not a permission error); an INSERT/UPDATE with a failing WITH CHECK/USING clause is
+-- what actually errors. Every "no grant" claim in the comments below should be read as
+-- "no RLS policy", not "no table privilege" — both produce the same effective default-deny,
+-- just via a different mechanism (rows silently filtered vs. a grant-level error). Column-
+-- scoped grants (orders.status, reviews.status/moderated_at) are kept as-documented intent
+-- for which single column the admin app should touch, even though they aren't the enforcement
+-- layer either.
 --
--- admin_users has NO policies and NO grants to anon/authenticated at all — intentional
--- default-deny. Only the table owner (postgres) and SECURITY DEFINER functions bypass this.
+-- admin_users has NO policies at all — intentional default-deny. RLS with zero policies means
+-- every operation (including SELECT, from any role, including an admin's own authenticated
+-- session) is denied; only the table owner (postgres) and SECURITY DEFINER functions bypass
+-- this.
 
 alter table categories enable row level security;
 alter table products enable row level security;

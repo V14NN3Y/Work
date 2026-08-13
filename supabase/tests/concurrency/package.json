@@ -1,0 +1,13 @@
+{
+  "name": "oralyah-concurrency-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Standalone concurrency tests against the local Supabase stack. Not part of the frontend build — has its own dependencies so it can run without the frontend container.",
+  "type": "module",
+  "scripts": {
+    "test:promo-race": "node --experimental-strip-types promo-race.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.112.3"
+  }
+}
