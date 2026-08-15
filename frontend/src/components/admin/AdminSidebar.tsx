@@ -3,16 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ClipboardList, LogOut, Package, Settings, Star, Tags, Ticket } from "lucide-react";
+import { useAdminBasePath } from "@/components/admin/AdminBasePathContext";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 
 const NAV_ITEMS = [
-  { href: "/admin/products", label: "Catalogue", icon: Package },
-  { href: "/admin/categories", label: "Catégories", icon: Tags },
-  { href: "/admin/orders", label: "Commandes", icon: ClipboardList },
-  { href: "/admin/reviews", label: "Avis", icon: Star },
-  { href: "/admin/promo-codes", label: "Codes promo", icon: Ticket },
-  { href: "/admin/settings", label: "Paramètres", icon: Settings },
+  { path: "/products", label: "Catalogue", icon: Package },
+  { path: "/categories", label: "Catégories", icon: Tags },
+  { path: "/orders", label: "Commandes", icon: ClipboardList },
+  { path: "/reviews", label: "Avis", icon: Star },
+  { path: "/promo-codes", label: "Codes promo", icon: Ticket },
+  { path: "/settings", label: "Paramètres", icon: Settings },
 ];
 
 interface AdminSidebarProps {
@@ -21,12 +22,13 @@ interface AdminSidebarProps {
 
 export default function AdminSidebar({ onNavigate }: AdminSidebarProps) {
   const pathname = usePathname();
+  const basePath = useAdminBasePath();
 
   async function handleLogout() {
     const supabase = createClient();
     await supabase.auth.signOut();
     // Full navigation so middleware re-evaluates with the now-cleared session cookie.
-    window.location.href = "/admin/login";
+    window.location.href = `${basePath}/login`;
   }
 
   return (
@@ -36,12 +38,13 @@ export default function AdminSidebar({ onNavigate }: AdminSidebarProps) {
       </div>
       <nav className="flex-1 space-y-1 px-2">
         {NAV_ITEMS.map((item) => {
-          const active = pathname.startsWith(item.href);
+          const href = `${basePath}${item.path}`;
+          const active = pathname.startsWith(href);
           const Icon = item.icon;
           return (
             <Link
-              key={item.href}
-              href={item.href}
+              key={item.path}
+              href={href}
               onClick={onNavigate}
               className={cn(
                 "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",

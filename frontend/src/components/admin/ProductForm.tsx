@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
+import { useAdminBasePath } from "@/components/admin/AdminBasePathContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -22,6 +23,7 @@ interface ProductFormProps {
 
 export default function ProductForm({ product, onSaved }: ProductFormProps) {
   const router = useRouter();
+  const basePath = useAdminBasePath();
   const [supabase] = useState(() => createClient());
   const isEdit = Boolean(product);
 
@@ -67,7 +69,7 @@ export default function ProductForm({ product, onSaved }: ProductFormProps) {
           image_url: "",
           category_id: categoryId === NO_CATEGORY ? null : categoryId,
         });
-        router.push(`/admin/products/${created.id}/edit`);
+        router.push(`${basePath}/products/${created.id}/edit`);
       }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Une erreur est survenue");

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Lock } from "lucide-react";
+import { useAdminBasePath } from "@/components/admin/AdminBasePathContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,7 @@ import { createClient } from "@/lib/supabase/client";
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const basePath = useAdminBasePath();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -29,8 +31,8 @@ export default function AdminLoginPage() {
         return;
       }
       // Full navigation (not router.push) so the middleware sees the just-set session cookie
-      // on the very next request and lets /admin/orders through immediately.
-      window.location.href = "/admin/orders";
+      // on the very next request and lets the orders page through immediately.
+      window.location.href = `${basePath}/orders`;
     } finally {
       setSubmitting(false);
     }

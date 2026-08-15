@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Eye, EyeOff, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useAdminBasePath } from "@/components/admin/AdminBasePathContext";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,6 +35,7 @@ import { formatFCFA } from "@/lib/formatCurrency";
 import type { Product } from "@/types";
 
 export default function AdminProductsPage() {
+  const basePath = useAdminBasePath();
   const [supabase] = useState(() => createClient());
   const [products, setProducts] = useState<Product[]>([]);
   const [total, setTotal] = useState(0);
@@ -105,7 +107,7 @@ export default function AdminProductsPage() {
       <div className="flex items-center justify-between">
         <h1 className="font-heading text-2xl font-bold text-foreground">Catalogue</h1>
         <Button asChild>
-          <Link href="/admin/products/new">Nouveau produit</Link>
+          <Link href={`${basePath}/products/new`}>Nouveau produit</Link>
         </Button>
       </div>
 
@@ -170,7 +172,7 @@ export default function AdminProductsPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                          <Link href={`/admin/products/${product.id}/edit`} className="gap-2">
+                          <Link href={`${basePath}/products/${product.id}/edit`} className="gap-2">
                             <Pencil className="h-4 w-4" />
                             Modifier
                           </Link>
