@@ -3,17 +3,6 @@
 .env.production
 .env.*.local
 
-# Python
-backend/.venv/
-backend/__pycache__/
-backend/**/__pycache__/
-backend/*.egg-info/
-backend/.pytest_cache/
-
-# Uploads (keep folder, ignore contents)
-backend/uploads/products/*
-!backend/uploads/products/.gitkeep
-
 # Node
 frontend/node_modules/
 frontend/.next/

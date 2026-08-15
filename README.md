@@ -1,46 +1,55 @@
-# E-commerce Autonome — COD + Géolocalisation GPS
+# ORALYAH — E-commerce COD + Géolocalisation GPS
 
-Plateforme e-commerce sur-mesure : boutique mobile en FCFA, checkout avec géolocalisation GPS
-obligatoire, paiement en espèces à la livraison, et dashboard admin (catalogue + commandes).
+Boutique mobile en FCFA, checkout avec géolocalisation GPS obligatoire, paiement en espèces à
+la livraison, et dashboard admin (catalogue, commandes, avis, codes promo).
+
+En production : [oralyah.com](https://oralyah.com).
 
 ## Stack
 
-- **Backend** : Python / FastAPI, SQLAlchemy (async) + Alembic, PostgreSQL, JWT (admin unique)
-- **Frontend** : Next.js (App Router) / TypeScript, Tailwind CSS
-- **Orchestration** : Docker Compose
+- **Backend** : Supabase (Postgres managé + Auth + Storage), logique métier en fonctions RPC
+  PL/pgSQL (`supabase/migrations/`)
+- **Frontend** : Next.js 14 (App Router) / TypeScript, Tailwind CSS + shadcn/ui
+- **Hébergement** : Netlify (déploiement automatique depuis `master` sur push)
 
-## Démarrage rapide
+## Démarrage rapide (développement local)
+
+Nécessite le [CLI Supabase](https://supabase.com/docs/guides/cli) et Docker (pour la stack
+locale Supabase — aucun compte requis).
 
 ```bash
+supabase start
 cp .env.example .env
-# éditer .env : définir ADMIN_USERNAME / ADMIN_PASSWORD / JWT_SECRET_KEY / mots de passe Postgres
+# éditer .env avec les clés affichées par `supabase start`
 
-docker compose up --build
+cd frontend
+npm install
+npm run dev
 ```
 
 - Boutique : http://localhost:3001
 - Admin : http://localhost:3001/admin/login
-- API : http://localhost:8000 (docs interactives sur http://localhost:8000/docs)
+- Supabase Studio (local) : http://localhost:54323
 
-Au premier démarrage, le backend applique automatiquement les migrations Alembic.
-
-## Peupler des données de démonstration
+## Tests
 
 ```bash
-docker compose exec backend python -m scripts.seed
-```
+# pgTAP (fonctions RPC, triggers, RLS) — nécessite la stack locale démarrée
+supabase test db
 
-## Tests backend
-
-```bash
-docker compose exec backend python -m pytest
+# Test de concurrence (verrouillage promo) — installation séparée, une fois
+cd supabase/tests/concurrency && npm install
+npm run test:promo-race
 ```
 
 ## Structure
 
 ```
-backend/    API FastAPI (routers publics + admin, modèles SQLAlchemy, migrations Alembic)
-frontend/   Application Next.js (boutique + dashboard admin)
+supabase/migrations/        Schéma, fonctions RPC, triggers, policies RLS
+supabase/tests/database/    Suite pgTAP
+supabase/tests/concurrency/ Test de concurrence (promo usage_limit)
+frontend/                   Application Next.js (boutique + dashboard admin)
 ```
 
-Voir `backend/app/routers/` pour les contrats d'API et `frontend/src/app/` pour les pages.
+Voir `frontend/src/lib/api.ts` pour la couche d'accès aux données (appels Supabase/RPC) et
+`frontend/src/app/` pour les pages.
