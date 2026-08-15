@@ -3,7 +3,9 @@
 Boutique mobile en FCFA, checkout avec géolocalisation GPS obligatoire, paiement en espèces à
 la livraison, et dashboard admin (catalogue, commandes, avis, codes promo).
 
-En production : [oralyah.com](https://oralyah.com).
+En production : [oralyah.com](https://oralyah.com) (boutique) — administration sur
+[adminboard.oralyah.com](https://adminboard.oralyah.com) (sous-domaine dédié, URLs propres,
+`/admin/...` sur le domaine principal redirige automatiquement).
 
 ## Stack
 

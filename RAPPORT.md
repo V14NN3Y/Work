@@ -1,198 +1,207 @@
-# Rapport de développement — E-commerce Autonome COD + GPS
+# Rapport de développement — ORALYAH (E-commerce COD + GPS)
 
-Ce document résume ce qui a été construit, ce qui fonctionne (vérifié réellement, pas seulement supposé), les limites connues, les pistes d'amélioration, et surtout **comment tester l'application vous-même**.
+Ce document résume ce qui a été construit, ce qui fonctionne (vérifié réellement, pas
+seulement supposé), les limites connues, les pistes d'amélioration, et **comment tester
+l'application vous-même**.
 
-Ce rapport a été mis à jour après un troisième cycle de travail : mise à niveau vers un e-commerce complet « aux normes » — conformité légale (Bénin), nouvelle identité visuelle, SEO, fonctionnalités catalogue avancées (catégories, avis clients, codes promo), suivi de commande client, et audit d'accessibilité. Le second cycle (refonte visuelle shadcn/ui, debounce, pagination, sécurité admin) reste documenté ci-dessous.
+Ce rapport a été mis à jour après un **quatrième cycle de travail** : migration complète du
+backend vers Supabase, mise en ligne réelle (Netlify + domaine `oralyah.com`), refonte visuelle
+autour du vrai logo du client, et sous-domaine admin dédié. Les trois cycles précédents (mise
+en place initiale, refonte shadcn/ui, mise à niveau « e-commerce complet » — catégories, avis,
+codes promo, SEO, accessibilité) restent résumés en section 1.1 pour mémoire, mais **l'infra
+qu'ils décrivaient (FastAPI, Docker Compose, pytest) n'existe plus** — entièrement remplacée
+ce cycle-ci.
 
 ---
 
 ## 1. Ce qui a été fait
 
-Une plateforme e-commerce complète, construite de zéro, en trois blocs :
+### 1.1 Cycles 1-3 (résumé, infra depuis remplacée)
 
-| Bloc | Contenu |
-|---|---|
-| **Backend** | API FastAPI (Python) : catalogue public, commandes, auth admin JWT (mot de passe **haché bcrypt**), gestion catalogue (CRUD + galerie d'images), gestion commandes. Base PostgreSQL avec migrations Alembic. |
-| **Frontend** | Application Next.js (TypeScript) : boutique mobile (catalogue, fiche produit, panier/checkout avec GPS), dashboard admin (catalogue + commandes). Design system **shadcn/ui** + Tailwind, polices Rubik/Nunito Sans auto-hébergées. |
-| **Infra** | Docker Compose : un `docker compose up` démarre Postgres + backend + frontend, avec migrations automatiques au démarrage. |
+Boutique mobile FCFA, checkout GPS obligatoire, paiement en espèces à la livraison, dashboard
+admin. Fonctionnalités livrées et toujours en place aujourd'hui (juste sur une infra
+différente) : catalogue avec galerie multi-images, panier persistant, pagination, catégories
+et filtres, suivi de commande sans compte client, avis clients avec preuve d'achat et
+modération, codes promo avec verrouillage anti-concurrence, pages légales structurées (Bénin),
+SEO (sitemap/robots/Open Graph/Schema.org), accessibilité (alt text, lien d'évitement, zones
+cliquables ≥ 48px).
 
-Détail des fonctionnalités livrées :
-- Catalogue produit avec grille responsive, ajout rapide au panier, fiche produit détaillée avec **galerie multi-images** (upload, réordonnancement, suppression) — une extension du schéma fourni à l'origine (qui ne prévoyait qu'une image par produit).
-- Panier persistant (localStorage), calcul dynamique des sous-totaux/total, **pagination** du catalogue.
-- Checkout avec géolocalisation GPS **obligatoire** (conforme au schéma de données fourni : `latitude`/`longitude` non nuls), gestion des erreurs de permission avec bouton de nouvelle tentative.
-- Paiement unique : espèces à la livraison.
-- Dashboard admin protégé par authentification (compte unique, JWT, **mot de passe haché**) : CRUD catalogue, suivi des commandes avec filtrage par statut et **pagination**, lien Google Maps généré automatiquement à partir des coordonnées GPS du client, changement de statut (avec restauration automatique du stock en cas d'annulation).
-- Génération automatique d'une référence de commande unique, décrément du stock à la commande.
-- **Refonte visuelle complète** (voir section 2) : identité visuelle propre, typographie dédiée, composants shadcn/ui (menus, boîtes de dialogue, notifications toast) sur toute l'application — boutique et dashboard admin.
-
-### Ajouts du troisième cycle — mise à niveau « e-commerce complet »
+### 1.2 Cycle 4 — migration Supabase + mise en ligne réelle + refonte visuelle
 
 | Chantier | Contenu |
 |---|---|
-| **Nouvelle identité visuelle** | Palette « Ambre chaleureux & bleu confiance » (`#B45309` marque/liens, `#2563EB` boutons d'achat) — remplace le vert/orange initial, jugé peu harmonieux. Contrastes vérifiés WCAG AA (calcul de luminance relative, pas seulement visuel) avant application. |
-| **Conformité légale (Bénin)** | Pages *Mentions légales*, *CGV*, *Politique de confidentialité* structurées autour du Code du Numérique béninois (loi n°2017-20) et des obligations APDP, avec emplacements `[À COMPLÉTER]` clairement marqués pour vos informations réelles (raison sociale, RCCM, IFU, numéro APDP). **Ces pages ne sont pas des documents juridiques finaux** — une relecture par un avocat local est recommandée avant publication. Lien vers ces pages + le suivi de commande ajouté dans un nouveau pied de page sur toute la boutique. |
-| **SEO & découvrabilité** | `sitemap.xml` et `robots.txt` générés automatiquement (incluent chaque fiche produit, excluent `/admin`), balises Open Graph/Twitter Card, données structurées Schema.org (`Product`, prix en XOF, disponibilité) sur chaque fiche produit. |
-| **Suivi de commande client** | Recherche publique par référence de commande + numéro de téléphone (`/suivi-commande`, lié depuis le pied de page et la page de confirmation) — **sans création de compte client**, cohérent avec le fait qu'aucune authentification client n'existe. Message d'erreur volontairement identique que la référence soit inconnue ou le téléphone incorrect, pour empêcher de deviner des références de commande par tâtonnement. |
-| **Catégories & filtres** | Catégories gérées depuis l'admin, filtre par catégorie sur le catalogue public (liens cliquables, compatibles avec la pagination existante). |
-| **Avis clients** | Un client ne peut laisser un avis que sur un produit d'une commande **terminée** dont il prouve la référence + le téléphone (même mécanisme que le suivi de commande) — un avis par produit et par commande. Chaque avis reste **masqué** (« en attente ») jusqu'à modération explicite dans l'admin ; seuls les avis approuvés apparaissent publiquement, avec la note moyenne. |
-| **Codes promo** | Réduction en pourcentage ou montant fixe, avec montant minimum de commande, plafond de réduction, date d'expiration et **limite d'utilisation totale** appliquée de façon sûre même si deux clients commandent au même instant (verrouillage de ligne en base, testé avec deux connexions simultanées réelles — un seul des deux passages doit réussir). Aperçu de la réduction dans le panier avant validation. |
-| **Audit d'accessibilité** | Texte alternatif sur toutes les images (dont un oubli corrigé dans la galerie admin), lien d'évitement « Aller au contenu » ajouté (absent jusqu'ici), correction d'un composant de notation par étoiles qui utilisait un rôle ARIA incomplet (`radiogroup` sans la navigation clavier associée — remplacé par un composant plus simple et réellement accessible). |
-| **Robustesse** | L'application n'avait **aucune page d'erreur** : une erreur de rendu imprévue (trouvée pendant les tests — une image provenant d'un domaine non autorisé) faisait disparaître toute la page (écran blanc), sans aucun message. Ajout d'un vrai écran d'erreur récupérable (`error.tsx`) et d'une page 404 propre (`not-found.tsx`) — corrige la classe de bug entière, pas seulement le cas rencontré. |
+| **Backend** | FastAPI + PostgreSQL + Docker Compose entièrement retirés. Remplacés par **Supabase** (Postgres managé + Auth + Storage), logique métier réécrite en fonctions **RPC PL/pgSQL** (`create_order`, `track_order`, `submit_review`, `validate_promo_code`) et en **triggers** pour les invariants qui doivent tenir quel que soit le chemin d'écriture (restock à l'annulation, suppression bloquée sur produit/code promo déjà utilisé, normalisation des codes promo). Sécurité par **Row Level Security** sur chaque table plutôt que par vérifications côté application. |
+| **Authentification admin** | JWT + mot de passe haché maison → **Supabase Auth** (email + mot de passe, session par cookie httpOnly, vérifiée côté serveur à chaque requête `/admin/*` par `middleware.ts` via une fonction `is_admin()`). |
+| **Déploiement réel** | Frontend sur **Netlify** (build + déploiement automatique à chaque `git push` sur `master`), backend sur un vrai **projet Supabase Cloud**. Nom de domaine **`oralyah.com`** acheté (Namecheap) et connecté (Netlify DNS, HTTPS automatique Let's Encrypt, renouvellement automatique). |
+| **Sous-domaine admin** | `adminboard.oralyah.com` — l'administration a sa propre adresse, avec des URLs propres (`/login`, `/orders`, sans préfixe `/admin`). Les anciens liens `oralyah.com/admin/*` redirigent automatiquement vers l'équivalent sur le sous-domaine. Le développement local (`localhost:3001/admin/...`) continue de fonctionner sans changement. |
+| **Refonte visuelle** | Nouvelle palette extraite du **vrai logo** du client (vert forêt `#0B4D38`, or `#896829` pour les actions d'achat) — remplace la palette provisoire « Ambre & bleu » du cycle précédent. Contrastes WCAG recalculés et vérifiés pour chaque paire texte/fond (l'or exact du logo, trop clair, a dû être assombri spécifiquement pour les boutons — l'or vif d'origine est réservé aux usages décoratifs). Logo intégré (en-tête, pied de page, favicon — qui n'existait pas avant). |
+| **En-tête, recherche, filtres** | En-tête repensé (logo + recherche + icônes), recherche produit fonctionnelle (le paramètre existait déjà côté API, il manquait l'interface), filtres catégories en colonne latérale sur desktop / pastilles horizontales défilantes sur mobile, bannière catalogue. Plusieurs allers-retours de correction responsive (débordement horizontal sur petits écrans, espacement) — voir « bugs trouvés » ci-dessous. |
+| **Pied de page simplifié** | Réduit à la seule mention de copyright, à la demande explicite du client. Les liens vers les pages légales sont **masqués** (commentés dans le code, pas supprimés) tant que leur contenu contient des `[À COMPLÉTER]` — jugé pas assez professionnel pour être visible publiquement. Retirées du `sitemap.xml` en cohérence. |
+| **Tests** | La suite `pytest` (38 tests) n'existe plus avec le backend FastAPI. Remplacée par : **pgTAP** (`supabase/tests/database/`, 54 assertions — `create_order`, `track_order`, `submit_review`, triggers, RLS complète par rôle) et un **test de concurrence réel en TypeScript** (`supabase/tests/concurrency/promo-race.ts`) qui lance deux requêtes HTTP simultanées contre un code promo à usage limité, répété 50 fois. |
+| **Nettoyage** | Tous les fichiers liés à l'ancien déploiement (`docker-compose*.yml`, `Caddyfile`, `Dockerfile*`, anciens guides `DEPLOY.md`/`GUIDE-LANCEMENT.md`) supprimés — plus rien ne les référence, ils décrivaient une infra qui n'existe plus. Conteneurs/images/volumes Docker locaux nettoyés sur la machine de développement. |
 
-**Ce qui n'a volontairement pas été ajouté ce cycle** : compte client, notifications email/SMS, moyens de paiement en ligne — hors du périmètre validé avec vous (voir section 4 pour les pistes restantes).
+**Ce qui n'a volontairement pas été ajouté** (inchangé depuis les cycles précédents) : compte
+client, notifications email/SMS, moyens de paiement en ligne.
 
 ---
 
 ## 2. Ce qui fonctionne bien (vérifié, pas juste écrit)
 
-Tout ce qui suit a été **testé en conditions réelles** (suite de tests automatisés + navigateur piloté), pas seulement relu :
+- **54 assertions pgTAP passent** (`supabase test db`) : décrément de stock et verrouillage
+  promo dans `create_order` (y compris l'**atomicité** — un échec sur le second article
+  annule bien le décrément déjà fait sur le premier), anti-énumération de `track_order` et
+  `submit_review` (messages d'erreur comparés **entre eux**, pas juste contre une chaîne fixe,
+  pour prouver qu'ils sont réellement identiques), asymétrie du restock à l'annulation
+  (annuler restocke, ré-annuler n'est pas idempotent en double, mais **désannuler ne
+  redécrémente jamais** — testé explicitement), suppressions gardées (produit/code promo déjà
+  utilisés), RLS testée rôle par rôle (`anon`, `authenticated` non-admin, `authenticated`
+  admin) sur chaque table.
+- **Test de concurrence réel, 50 itérations** : deux requêtes HTTP indépendantes et
+  simultanées contre un code promo à `usage_limit=1` — une seule réussit à chaque fois, sur
+  les 50 répétitions (fixtures fraîches et nettoyage à chaque itération). Prouve que le
+  verrouillage de ligne PL/pgSQL tient sous charge concurrente réelle, pas seulement en
+  théorie.
+- **Déploiement en production vérifié directement** (pas juste « ça devrait marcher ») :
+  `https://oralyah.com` répond 200 avec le bon contenu, `https://adminboard.oralyah.com/login`
+  sert la page de connexion admin sur une URL propre, `https://oralyah.com/admin/orders`
+  (ancien lien) redirige bien (307) vers l'équivalent sur le sous-domaine, `sitemap.xml` et
+  `robots.txt` référencent le vrai domaine, certificat HTTPS actif et renouvelé
+  automatiquement.
+- **API REST + RPC testées en direct contre la vraie base de production** (pas seulement en
+  local) : lecture publique des produits (RLS appliquée), `validate_promo_code` répond
+  correctement, bucket de stockage d'images accessible publiquement.
+- **Design vérifié visuellement de façon itérative** par le client directement sur le site
+  déployé (pas seulement en local) à chaque étape de la refonte — logo, couleurs, en-tête,
+  recherche, filtres, bannière, pied de page.
 
-- **38 tests backend automatisés passent** (`pytest`) : produits publics/admin, commandes (création, stock insuffisant, annulation → restauration stock), authentification, catégories, suivi de commande (bon/mauvais téléphone, référence inconnue), avis clients (preuve d'achat, doublon bloqué, cycle de modération complet), codes promo (pourcentage, montant fixe plafonné, montant minimum, expiration, limite d'utilisation) — dont **un test de concurrence réel** avec deux connexions base de données indépendantes créant deux commandes simultanées sur un code limité à une seule utilisation, confirmant qu'une seule des deux passe.
-- **Parcours client rejoué de bout en bout dans un vrai navigateur**, avec le nouveau design : ajout au panier → panier persistant après navigation → formulaire rempli → position GPS capturée (coordonnées affichées, bouton de validation qui ne s'active qu'une fois la position obtenue) → commande soumise → page de confirmation avec référence → panier vidé. La commande est ensuite retrouvée correctement côté admin avec les **coordonnées GPS exactes** et le lien Google Maps correspondant.
-- **Parcours admin vérifié visuellement et fonctionnellement**, avec le nouveau design : connexion, liste des commandes avec filtres de statut et pagination, menu d'actions (⋮) par produit, **boîte de dialogue de confirmation** avant suppression définitive (remplace l'ancienne popup native du navigateur), recherche produit qui n'envoie **plus qu'une requête** après une frappe rapide (vérifié : 6 lettres tapées → 1 seul appel API, au lieu de 6), fiche produit en édition avec galerie d'images (upload réel d'image → conversion WebP → affichage correct), catalogue avec recherche et masquage/affichage.
-- **Cycle complet avis client vérifié de bout en bout** : soumission d'un avis avec preuve d'achat → statut « en attente » (invisible publiquement) → apparition dans la file de modération admin → approbation → apparition publique sur la fiche produit avec la note moyenne correcte.
-- **Cycle complet code promo vérifié de bout en bout** : création d'un code depuis l'admin → aperçu de la réduction avant commande → commande créée avec le total réduit → compteur d'utilisation incrémenté → visible côté admin sur la commande concernée.
-- **Passe de vérification visuelle** sur l'ensemble des pages (existantes + nouvelles : catégories, suivi de commande, avis, codes promo, pages légales) : aucun problème de mise en page, de débordement ou de contraste trouvé.
-- Génération d'images de démonstration **100 % locale** (aucune dépendance à un service externe), cohérent avec l'esprit « autonome » du projet. Polices également auto-hébergées (aucun appel à Google Fonts au chargement).
-- Zones cliquables ≥ 48px sur tous les boutons/champs partagés (boutique + formulaires admin) ; les icônes denses propres à l'admin (menu ⋮, réordonnancement de galerie) restent volontairement plus compactes (40-44px), toujours au-dessus du plancher d'accessibilité recommandé (24px).
+### Ce qui n'a **pas** été vérifié ce cycle (à faire avant un lancement public)
 
-### Bugs réels trouvés et corrigés pendant cette vérification
+Contrairement aux cycles précédents où un parcours client/admin complet avait été rejoué en
+conditions réelles, **ce cycle-ci n'a pas inclus un parcours de bout en bout complet sur le
+nouveau design en production** (créer un vrai produit → le commander → le suivre → laisser un
+avis, avec le nouveau visuel). Le backend est vérifié indépendamment (tests + API), le visuel
+est vérifié indépendamment (captures d'écran itératives), mais les deux ensemble, en conditions
+réelles, sur le site final, restent à confirmer. Voir section 5.
 
-Ces bugs ne se seraient pas vus à la simple lecture du code — ils sont sortis des tests en conditions réelles, sur les trois cycles de travail :
+### Bugs réels trouvés et corrigés pendant ce cycle
 
-1. **Panier vidé silencieusement** : en mode développement (React Strict Mode), une course entre la lecture et l'écriture du panier dans `localStorage` pouvait effacer le panier à chaque navigation complète. Corrigé.
-2. **Incohérence d'affichage des coordonnées GPS** : le lien Maps généré juste après la commande n'avait pas le même format que celui affiché plus tard dans le dashboard admin (précision décimale différente). Corrigé.
-3. **Images cassées côté boutique** : les URLs d'images renvoyées par l'API (chemins relatifs `/uploads/...`) n'étaient pas résolues vers la bonne adresse par le frontend. Corrigé.
-4. **CORS mal configuré** : le port réel du frontend (3001, voir section suivante) ne correspondait pas à l'origine autorisée côté backend, bloquant silencieusement tous les appels admin. Corrigé.
-5. **Écran blanc sans message en cas d'erreur** (trouvé pendant les tests du troisième cycle) : l'application n'avait aucune page d'erreur — une image avec une URL inattendue suffisait à faire disparaître toute la page, sans aucun message pour l'utilisateur ni moyen de s'en sortir autrement qu'en rechargeant. Corrigé par l'ajout d'un vrai écran de récupération.
-6. **Filtre par catégorie cassant la pagination** : l'ajout du paramètre `?category=...` dans l'URL du catalogue entrait en conflit avec la construction des liens de pagination (qui supposait à tort qu'aucun `?` n'était déjà présent). Corrigé avant mise en production de la fonctionnalité.
+1. **Le Runtime Next.js de Netlify ne s'activait pas** : un premier déploiement a servi le
+   contenu brut du dossier `.next/` comme un site statique (0 fonction serverless générée),
+   provoquant un 404 général. Causé par un réglage manuel du "Publish directory" qui empêchait
+   Netlify de reconnaître le projet comme Next.js. Corrigé en sélectionnant explicitement le
+   "Next.js Runtime" dans les réglages de build.
+2. **URL de stockage d'image incorrecte en interne vs public** *(trouvé lors d'un cycle
+   antérieur, toujours pertinent)* : déjà documenté, non régressé ce cycle.
+3. **Débordement horizontal sur mobile** : l'en-tête (logo + barre de recherche + icônes)
+   dépassait la largeur disponible sur les écrans étroits (~390px), forçant toute la page en
+   défilement horizontal — pas seulement l'en-tête, la page entière semblait « décalée ».
+   Corrigé en rendant l'en-tête réellement responsive (tailles réduites, recherche repliable
+   sous forme d'icône en dessous de `sm`).
+4. **Marge invisible dans l'image du logo** : l'icône du logo dans l'en-tête gardait un grand
+   espace transparent malgré un espacement CSS réduit — le fichier image lui-même contenait
+   une marge cachée (un halo à très faible opacité gonflait la zone de recadrage). Corrigé en
+   recadrant l'image sur un seuil d'opacité plutôt que sur la simple présence de pixels non
+   transparents.
+5. **Liens internes de l'admin cassés par le sous-domaine propre** : faire pointer les liens
+   de la barre latérale admin vers des URLs sans préfixe `/admin` aurait cassé le développement
+   local (aucun sous-domaine dédié disponible sur `localhost` pour distinguer boutique et
+   admin). Résolu par un préfixe calculé côté serveur selon le nom d'hôte de la requête,
+   partagé aux composants via un contexte React — fonctionne à la fois en local
+   (`/admin/...`) et sur `adminboard.oralyah.com` (`/...`, propre).
 
 ---
 
 ## 3. Limites connues
 
-Rien n'est « cassé » dans les parcours testés, mais voici les points à avoir en tête :
-
-- **Pages légales non finalisées juridiquement** : les pages Mentions légales / CGV / Politique de confidentialité sont structurées et informées (Code du Numérique béninois, APDP), mais contiennent des emplacements `[À COMPLÉTER]` pour vos informations réelles d'entreprise (raison sociale, RCCM, IFU, adresse, hébergeur, numéro de récépissé APDP). **Ne pas publier tel quel** — compléter ces informations et faire relire par un avocat local. Voir `frontend/src/app/(shop)/mentions-legales/page.tsx`, `cgv/page.tsx`, `politique-de-confidentialite/page.tsx`.
-- **Port 3000 → 3001** : sur cette machine, le port 3000 était déjà utilisé par un autre processus. La boutique tourne donc sur **http://localhost:3001** (et non 3000). C'est documenté dans le `README.md`.
-- **Pas de repli si le client refuse le GPS** : c'est un choix assumé (validé avec vous pendant la planification) — sans position GPS, la commande ne peut pas être finalisée. Si un client refuse durablement la permission de localisation, il ne peut pas commander.
-- **Compte admin unique** — adapté à l'usage prévu (un seul gérant). Le mot de passe est maintenant haché (bcrypt) plutôt que stocké en clair (voir section 5 pour configurer un hash de production), mais il n'y a toujours qu'un seul compte, sans gestion de rôles.
-- **Session admin stockée dans `localStorage`** (pas de cookie sécurisé httpOnly) — choix pragmatique pour un back-office mono-utilisateur, documenté dans le code (`lib/adminAuth.ts`).
-- **Format de téléphone générique** (`+ou non, 8 à 15 chiffres`) — le cahier des charges ne précisait pas de pays cible exact.
-- **Aucun compte client** : choix assumé (validé avec vous) — le suivi de commande et le dépôt d'avis se font par référence de commande + téléphone, sans inscription. Un client ne peut pas voir l'historique de *toutes* ses commandes en une seule fois, seulement les retrouver une par une avec leur référence.
-- **Le script de peuplement (`scripts.seed`) ne crée pas de catégories ni de codes promo** — ces deux fonctionnalités doivent être configurées manuellement depuis l'admin après le premier démarrage (voir section 5).
-- **Pas de tests automatisés côté frontend** (seul le backend a une suite `pytest`, 38 tests). La vérification du frontend a été faite manuellement/scriptée pendant les sessions de développement, mais n'est pas rejouable automatiquement en CI pour l'instant.
-- **Mode développement uniquement** : `docker compose up` lance le frontend et le backend en mode dev (rechargement à chaud), pas en build de production optimisé. À adapter avant une mise en ligne réelle (build Next.js, plusieurs workers Uvicorn, HTTPS via reverse proxy).
+- **Pages légales non finalisées** : Mentions légales / CGV / Politique de confidentialité
+  contiennent toujours des `[À COMPLÉTER]` (raison sociale, RCCM, IFU, adresse, n° APDP) —
+  **masquées volontairement** (liens retirés du pied de page et du sitemap) tant que ce n'est
+  pas rempli. Décision du client, pas un oubli. À faire relire par un avocat local une fois
+  complétées, avant toute ouverture publique large.
+- **Aucune sauvegarde automatique** : le plan gratuit Supabase n'inclut pas de sauvegardes
+  automatiques de la base de données (fonctionnalité des plans payants). À surveiller si le
+  volume de données/commandes devient significatif.
+- **Limites des plans gratuits** : Netlify (bande passante, minutes de build) et Supabase
+  (taille de base, requêtes) ont des plafonds sur leurs plans gratuits respectifs. Largement
+  suffisant pour démarrer ; à surveiller en cas de pic de trafic important (le projet visait
+  initialement un lancement porté par TikTok).
+- **Catalogue de production actuellement vide** : les données de test utilisées pendant le
+  développement ont été supprimées avant la livraison. Aucun vrai produit ni catégorie n'existe
+  encore en production — à ajouter depuis `/admin` (voir section 5).
+- **Aucun compte client, aucune notification email/SMS, aucun paiement en ligne** — choix
+  assumés, inchangés depuis les cycles précédents (voir section 4).
+- **Pas de tests automatisés côté rendu frontend** (le pgTAP + le test de concurrence couvrent
+  le backend ; aucun test type Playwright ne rejoue le parcours visuel automatiquement).
 
 ---
 
 ## 4. Pistes d'amélioration restantes (non bloquantes)
 
-Les points des cycles précédents (debounce recherche, pagination, mot de passe admin haché, conformité légale, SEO, catégories, avis, codes promo, accessibilité, suivi de commande) ont été traités — voir section 1 et 2. Ce qui reste, par ordre d'impact probable :
-
-1. **Compléter et faire relire les pages légales** par un avocat local avant toute mise en ligne réelle (voir section 3) — c'est le seul point bloquant pour une ouverture publique du site.
-2. **Tests frontend automatisés** (Playwright ou équivalent) pour rejouer le parcours client/admin en continu, plutôt que manuellement.
-3. **Build de production** pour le Docker Compose (image Next.js optimisée, Uvicorn multi-workers, reverse proxy HTTPS) avant un déploiement réel.
-4. **Stockage image en production** : actuellement sur disque local (choix validé pour cette V1) — prévoir S3/MinIO si plusieurs instances du backend doivent tourner en parallèle.
-5. **Durcissement supplémentaire de l'admin** : cookie httpOnly + BFF plutôt que JWT en `localStorage`, si le risque de vol de session par XSS devient une préoccupation réelle.
-6. **Notifications** : aucune alerte (email/SMS) n'est envoyée à l'admin à la réception d'une commande, ni au client au changement de statut — il faut consulter le dashboard ou utiliser le suivi de commande.
-7. **Paiement en ligne** : le site reste exclusivement paiement à la livraison — un moyen de paiement en ligne (mobile money, carte) serait une évolution naturelle si le volume de commandes le justifie.
+1. **Compléter et faire relire les pages légales** par un avocat local, puis les
+   réactiver (footer + sitemap) — seul point qui reste réellement bloquant pour une ouverture
+   publique large.
+2. **Peupler le vrai catalogue** (produits, catégories) — le site est vide en l'état.
+3. **Parcours de bout en bout en conditions réelles** sur le nouveau design (voir section 2) —
+   recommandé avant de considérer la mise en ligne pleinement validée.
+4. **Tests frontend automatisés** (Playwright ou équivalent).
+5. **Notifications** : aucune alerte (email/SMS) à l'admin à la réception d'une commande, ni au
+   client au changement de statut.
+6. **Paiement en ligne** (mobile money, carte) — évolution naturelle si le volume le justifie.
+7. **Sauvegardes** : passer sur un plan Supabase payant (ou exporter régulièrement) si le
+   volume de données le justifie.
 
 ---
 
 ## 5. Comment tester
 
-### Prérequis
-- Docker + Docker Compose installés (déjà utilisés pour cette vérification).
+L'ancienne procédure (`docker compose up`, `pytest`, `scripts.seed`) **ne fonctionne plus** —
+elle décrivait une infra entièrement retirée ce cycle. Voir aussi `README.md`.
 
-### Démarrage
+### Développement local
 
-```bash
-cd /home/billvianney/Work
-docker compose up --build
-```
-
-Au premier démarrage, les migrations de base de données s'appliquent automatiquement. Attendre les lignes `Application startup complete` (backend) et `Ready` (frontend) dans les logs.
-
-- Boutique : **http://localhost:3001**
-- Admin : **http://localhost:3001/admin/login**
-- API + documentation interactive : **http://localhost:8000/docs**
-
-### Peupler des données de démonstration
+Nécessite le [CLI Supabase](https://supabase.com/docs/guides/cli) et Docker (pour la stack
+Supabase locale uniquement — plus pour le frontend).
 
 ```bash
-docker compose exec backend python -m scripts.seed
+supabase start
+cd frontend
+npm install
+npm run dev
 ```
 
-Crée 6 produits avec images générées localement (aucune connexion internet requise).
+- Boutique : http://localhost:3001
+- Admin : http://localhost:3001/admin/login
+- Supabase Studio (local) : http://localhost:54323
 
-### Tests automatisés (backend)
+### Tests automatisés
 
 ```bash
-docker compose exec backend python -m pytest -v
+# pgTAP — nécessite la stack locale démarrée (supabase start)
+supabase test db
+
+# Test de concurrence (verrouillage promo, 50 itérations)
+cd supabase/tests/concurrency && npm install
+npm run test:promo-race
 ```
 
-→ 38 tests doivent passer (produits, commandes, authentification, catégories, suivi de commande, avis clients, codes promo — dont un test de concurrence réel).
+### Tester le vrai site en production
 
-### Test manuel — parcours client
+- Boutique : https://oralyah.com
+- Admin : https://adminboard.oralyah.com/login
 
-1. Ouvrir http://localhost:3001 → vérifier le catalogue (images, prix en FCFA, cartes avec effet au survol).
-2. Cliquer sur un produit → vérifier la fiche détaillée (galerie, description, sélecteur de quantité).
-3. Ajouter au panier, ouvrir le panier (bouton « Panier » avec pastille de compteur bleue en haut à droite).
-4. Modifier une quantité / supprimer un article → vérifier que le total se recalcule.
-5. Remplir le formulaire (nom, téléphone, adresse).
-6. Cliquer sur « Partager ma position GPS » et autoriser la géolocalisation dans le navigateur.
-7. Vérifier que le bouton « Valider la commande » reste désactivé (grisé) tant que la position n'est pas capturée, puis s'active (bleu) une fois obtenue.
-8. Valider → vérifier la page de confirmation avec la référence de commande (`CMDxxxxxx`).
-9. Retourner à la boutique → vérifier que le panier est vide.
+Le catalogue de production est actuellement vide (voir section 3) — créer un produit test
+depuis l'admin est nécessaire avant de pouvoir rejouer un vrai parcours client (ajout panier →
+commande → suivi → avis).
 
-### Test manuel — parcours admin
+### Parcours à rejouer manuellement (recommandé avant lancement public, voir section 2)
 
-1. Ouvrir http://localhost:3001/admin/login.
-2. Se connecter avec les identifiants définis dans `.env` (`ADMIN_USERNAME` / `ADMIN_PASSWORD`, par défaut `admin` / `change-me`).
-3. Onglet **Commandes** : retrouver la commande passée à l'étape précédente, filtrer par statut, tester la pagination si plus de 20 commandes, cliquer sur « Voir sur Maps » (doit ouvrir la position GPS exacte), changer son statut via le menu déroulant coloré.
-4. Onglet **Catalogue** : taper rapidement dans la recherche (vérifier qu'elle ne se déclenche qu'après une courte pause), créer un nouveau produit, l'ouvrir en édition, uploader une ou plusieurs images (galerie), les réordonner, masquer un produit puis vérifier qu'il disparaît du catalogue public, cliquer sur le menu ⋮ d'un produit déjà commandé → Supprimer → confirmer dans la boîte de dialogue → vérifier le message de refus (produit déjà commandé).
-
-### Test manuel — catégories, suivi de commande, avis clients, codes promo
-
-1. **Catégories** : Admin → onglet **Catégories** → créer une catégorie (ex. « Électronique »). Éditer un produit et lui assigner cette catégorie. Retourner sur la boutique publique : un filtre par catégorie doit apparaître au-dessus du catalogue.
-2. **Suivi de commande** : passer une commande, noter sa référence (`CMDxxxxxx`). Aller sur **http://localhost:3001/suivi-commande** (lien aussi présent dans le pied de page et sur la page de confirmation), saisir la référence + le téléphone utilisé → le statut, les articles et le total doivent s'afficher. Tester avec un mauvais numéro : le message d'erreur doit être générique (ne doit pas révéler si c'est la référence ou le téléphone qui est faux).
-3. **Avis clients** : passer une commande, puis dans l'admin passer son statut à **Complétée**. Sur la fiche du produit commandé, cliquer sur « Laisser un avis », saisir la référence + le téléphone, une note et un commentaire. L'avis n'apparaît **pas encore** publiquement. Dans Admin → onglet **Avis**, le retrouver dans le filtre « En attente », l'approuver → il doit maintenant apparaître sur la fiche produit avec la note moyenne mise à jour.
-4. **Codes promo** : Admin → onglet **Codes promo** → créer un code (ex. `BIENVENUE10`, pourcentage, 10). Ajouter un produit au panier, saisir le code dans le champ prévu sur la page panier → la réduction et le nouveau total doivent s'afficher immédiatement. Finaliser la commande : le total réduit doit être conservé, et le nombre d'utilisations du code doit s'incrémenter dans l'admin.
-
-### Vérifier les pages légales et le SEO
-
-```bash
-curl http://localhost:3001/sitemap.xml
-curl http://localhost:3001/robots.txt
-```
-
-Ouvrir également **http://localhost:3001/mentions-legales**, **/cgv** et **/politique-de-confidentialite** — vérifier que les pages se chargent et que le pied de page y renvoie depuis n'importe quelle page de la boutique. Rappel : ces pages contiennent des `[À COMPLÉTER]` à remplir avant publication (voir section 3).
-
-### Configurer un mot de passe admin haché (optionnel, recommandé en production)
-
-Par défaut, `ADMIN_PASSWORD` (en clair dans `.env`) est haché automatiquement au démarrage — aucune action requise en développement. Pour éviter tout mot de passe en clair dans le fichier `.env` :
-
-```bash
-docker compose exec backend python -c "import bcrypt; print(bcrypt.hashpw(b'votre-mot-de-passe', bcrypt.gensalt()).decode())"
-```
-
-Copier le résultat dans `.env` sous `ADMIN_PASSWORD_HASH=...` (remplace alors `ADMIN_PASSWORD`).
-
-### Test API direct (optionnel)
-
-```bash
-curl http://localhost:8000/health
-curl http://localhost:8000/api/products
-```
-
-Ou utiliser l'interface Swagger interactive : http://localhost:8000/docs
-
-### Réinitialiser les données de test
-
-```bash
-docker compose exec postgres psql -U ecommerce -d ecommerce -c "TRUNCATE reviews, order_items, orders, promo_codes, product_images, products, categories RESTART IDENTITY CASCADE;"
-docker compose exec backend python -m scripts.seed
-```
-
-Le script de peuplement ne recrée ni catégories ni codes promo — à créer manuellement depuis l'admin si besoin après la réinitialisation.
+1. **Admin** : se connecter sur `adminboard.oralyah.com/login`, créer une catégorie, créer un
+   produit avec au moins une image, vérifier qu'il apparaît sur la boutique.
+2. **Client** : ajouter au panier, tester la recherche et le filtre par catégorie, passer une
+   commande complète (position GPS requise), noter la référence de commande affichée.
+3. **Suivi** : `oralyah.com/suivi-commande`, retrouver la commande par référence + téléphone.
+4. **Avis** : dans l'admin, passer la commande au statut « Complétée », puis sur la fiche
+   produit laisser un avis avec la même référence + téléphone, vérifier qu'il reste invisible
+   jusqu'à modération, l'approuver dans l'admin, vérifier qu'il apparaît publiquement.
+5. **Code promo** : créer un code depuis l'admin, l'appliquer au panier, vérifier la réduction
+   et le total, valider la commande, vérifier le compteur d'utilisation incrémenté côté admin.
