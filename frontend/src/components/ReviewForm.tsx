@@ -165,7 +165,7 @@ export default function ReviewForm({ productId, trigger }: ReviewFormProps) {
               {submitError && <p className="text-sm text-destructive">{submitError}</p>}
 
               <DialogFooter>
-                <Button type="submit" disabled={submitting}>
+                <Button type="submit" variant="cta" disabled={submitting}>
                   {submitting ? "Envoi en cours…" : "Envoyer mon avis"}
                 </Button>
               </DialogFooter>

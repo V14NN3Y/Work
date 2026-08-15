@@ -27,6 +27,7 @@ export default function OrderTrackingPage({ searchParams }: OrderTrackingPagePro
 
   const [notFound, setNotFound] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
 
   const form = useForm<TrackOrderFormValues>({
     resolver: zodResolver(trackOrderSchema),
@@ -112,54 +113,63 @@ export default function OrderTrackingPage({ searchParams }: OrderTrackingPagePro
       )}
 
       <div className="space-y-4">
-        {hasRemembered && (
-          <h2 className="font-heading text-lg font-semibold text-foreground">Retrouver une autre commande</h2>
-        )}
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="orderRef"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Référence de commande</FormLabel>
-                  <FormControl>
-                    <Input placeholder="CMD260808XXXXXX" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="phoneNumber"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Numéro de téléphone</FormLabel>
-                  <FormControl>
-                    <Input type="tel" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button type="submit" className="w-full gap-2" disabled={submitting}>
-              <Search className="h-4 w-4" />
-              {submitting ? "Recherche…" : "Rechercher ma commande"}
-            </Button>
-          </form>
-        </Form>
+        {hasRemembered && !formOpen ? (
+          <Button type="button" variant="outline" className="w-full gap-2" onClick={() => setFormOpen(true)}>
+            <Search className="h-4 w-4" />
+            Retrouver une commande
+          </Button>
+        ) : (
+          <>
+            {hasRemembered && (
+              <h2 className="font-heading text-lg font-semibold text-foreground">Retrouver une autre commande</h2>
+            )}
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="orderRef"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Référence de commande</FormLabel>
+                      <FormControl>
+                        <Input placeholder="CMD260808XXXXXX" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="phoneNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Numéro de téléphone</FormLabel>
+                      <FormControl>
+                        <Input type="tel" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit" variant="cta" className="w-full gap-2" disabled={submitting}>
+                  <Search className="h-4 w-4" />
+                  {submitting ? "Recherche…" : "Rechercher ma commande"}
+                </Button>
+              </form>
+            </Form>
 
-        {notFound && (
-          <p className="text-sm text-destructive">
-            Aucune commande trouvée avec ces informations. Vérifiez la référence et le numéro de téléphone.
-          </p>
-        )}
+            {notFound && (
+              <p className="text-sm text-destructive">
+                Aucune commande trouvée avec ces informations. Vérifiez la référence et le numéro de téléphone.
+              </p>
+            )}
 
-        {!hasRemembered && hydrated && (
-          <p className="text-xs text-muted-foreground">
-            Vos prochaines commandes apparaîtront automatiquement ici, sur cet appareil.
-          </p>
+            {!hasRemembered && hydrated && (
+              <p className="text-xs text-muted-foreground">
+                Vos prochaines commandes apparaîtront automatiquement ici, sur cet appareil.
+              </p>
+            )}
+          </>
         )}
       </div>
     </div>

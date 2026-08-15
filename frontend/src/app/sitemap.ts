@@ -9,9 +9,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/`, changeFrequency: "daily", priority: 1 },
     { url: `${SITE_URL}/cart`, changeFrequency: "monthly", priority: 0.3 },
     { url: `${SITE_URL}/suivi-commande`, changeFrequency: "monthly", priority: 0.3 },
-    { url: `${SITE_URL}/mentions-legales`, changeFrequency: "yearly", priority: 0.1 },
-    { url: `${SITE_URL}/cgv`, changeFrequency: "yearly", priority: 0.1 },
-    { url: `${SITE_URL}/politique-de-confidentialite`, changeFrequency: "yearly", priority: 0.1 },
+    // Pages légales volontairement retirées du sitemap tant que leur contenu contient des
+    // [À COMPLÉTER] — voir le commentaire dans SiteFooter.tsx. Les remettre ici en même temps
+    // que les liens du footer une fois le contenu réel renseigné.
+    // { url: `${SITE_URL}/mentions-legales`, changeFrequency: "yearly", priority: 0.1 },
+    // { url: `${SITE_URL}/cgv`, changeFrequency: "yearly", priority: 0.1 },
+    // { url: `${SITE_URL}/politique-de-confidentialite`, changeFrequency: "yearly", priority: 0.1 },
   ];
 
   let productRoutes: MetadataRoute.Sitemap = [];

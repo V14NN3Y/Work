@@ -1,27 +1,25 @@
-import Link from "next/link";
-
 export default function SiteFooter() {
   const year = new Date().getFullYear();
 
   return (
     <footer className="mt-12 border-t border-border bg-secondary">
-      <div className="mx-auto flex max-w-5xl flex-col gap-4 px-4 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+      <div className="mx-auto max-w-7xl px-6 py-6 text-center text-sm text-muted-foreground">
         <p>&copy; {year} ORALYAH. Tous droits réservés.</p>
-        <nav className="flex flex-wrap gap-x-6 gap-y-2" aria-label="Informations légales">
-          <Link href="/suivi-commande" className="hover:text-foreground hover:underline">
-            Mes commandes
-          </Link>
-          <Link href="/mentions-legales" className="hover:text-foreground hover:underline">
-            Mentions légales
-          </Link>
-          <Link href="/cgv" className="hover:text-foreground hover:underline">
-            CGV
-          </Link>
-          <Link href="/politique-de-confidentialite" className="hover:text-foreground hover:underline">
-            Politique de confidentialité
-          </Link>
-        </nav>
       </div>
+      {/*
+        Simplifié à la demande du client à une seule ligne de copyright. Le reste (logo,
+        liens "Mes commandes"/pages légales) a été retiré volontairement, pas oublié — les
+        pages légales restent non professionnelles à afficher tant que leur contenu contient
+        des [À COMPLÉTER] (raison sociale, RCCM, IFU, n° APDP...). Réactiver si besoin :
+
+      <Image src="/logo-full.png" alt="ORALYAH" width={140} height={34} className="h-8 w-auto" />
+      <nav aria-label="Informations légales">
+        <Link href="/suivi-commande">Mes commandes</Link>
+        <Link href="/mentions-legales">Mentions légales</Link>
+        <Link href="/cgv">CGV</Link>
+        <Link href="/politique-de-confidentialite">Politique de confidentialité</Link>
+      </nav>
+      */}
     </footer>
   );
 }

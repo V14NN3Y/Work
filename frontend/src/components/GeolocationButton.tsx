@@ -23,7 +23,7 @@ export default function GeolocationButton({ onCaptured }: GeolocationButtonProps
     <div className="space-y-2">
       <Button
         type="button"
-        variant={state.status === "success" ? "outline" : "default"}
+        variant={state.status === "success" ? "outline" : "cta"}
         className="w-full"
         onClick={requestPosition}
         disabled={state.status === "requesting"}

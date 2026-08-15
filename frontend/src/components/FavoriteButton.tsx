@@ -31,7 +31,7 @@ export default function FavoriteButton({ productId, className, stopPropagation }
         toggleFavorite(productId);
       }}
     >
-      <Heart className={cn("h-4 w-4", favorite ? "fill-destructive text-destructive" : "text-foreground")} />
+      <Heart className={cn("h-4 w-4", favorite ? "fill-cta text-cta" : "text-foreground")} />
     </Button>
   );
 }
